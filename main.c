@@ -1,35 +1,36 @@
 #include "main.h"
 
-
 int main(){
 	hid_init();
-	
-	struct hid_device_info *ll;
 
-	ll = hid_enumerate(0x1532, 0x0237);
-
-	while(ll){
-		if(ll->usage_page == 0x01 && ll->usage == 0x02 && ll->interface_number == 0x02){
-			break;
-		}
-		ll = ll->next;
-	}	
-
-	hid_device *keyboard;
-	if((keyboard = hid_open_path(ll->path)) == NULL){
+	hid_device *device = find_BWE();
+	if(device == NULL){
+		printf("Device was not found or could not be opened");
 		return 1;
 	}
+	
 
-	unsigned char *data =   "\x00\x00\x1f\x00\x00\x00\x08\x0f\x03\x00\x00\x00\x00" \
-				"\x00\x00\xff\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00" \
-				"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00" \
-				"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00" \
-				"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00" \
-				"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xfb\x00";
+	int sent = hid_send_feature_report(device, data, sizeof(data) / sizeof(char));
+	printf("datasize: %d, sizeof(char): %d , Sent: %d", sizeof(data), sizeof(char), sent); //debugging
 
-
-
-	int sent = hid_send_feature_report(keyboard, data, sizeof(data) / sizeof(char));
-
+	hid_close(device);
+	
 	hid_exit();
+}
+
+hid_device *find_BWE(){
+	struct hid_device_info *linked_list_devices = hid_enumerate(DEV_VID, DEV_PID);
+	struct hid_device_info *device_info = linked_list_devices;
+	while(device_info != NULL){
+		if(device_info->usage_page == 0x01 && device_info->usage == 0x02 && device_info->interface_number == 0x02){
+			break;
+		}
+		device_info = device_info->next;
+	}
+
+	hid_device *device = hid_open_path(device_info->path);
+
+	hid_free_enumeration(linked_list_devices); // free the linked list
+
+	return device;
 }
