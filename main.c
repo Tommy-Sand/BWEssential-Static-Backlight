@@ -1,35 +1,35 @@
 #include "main.h"
 
 
-int main(int argc, char **argv){
+int main(){
+	hid_init();
 	
-	if(libusb_init(NULL) != 0)
-		return 1;
+	struct hid_device_info *ll;
 
-	libusb_device_handle *dev_handle;
+	ll = hid_enumerate(0x1532, 0x0237);
 
-	find_BWE(dev_handle);
+	while(ll){
+		if(ll->usage_page == 0x01 && ll->usage == 0x02 && ll->interface_number == 0x02){
+			break;
+		}
+		ll = ll->next;
+	}	
 
-	libusb_exit(NULL);
-
-	return 0;
-}
-
-int find_BWE(libusb_device_handle *dev_handle){
-
-	if((dev_handle = libusb_open_device_with_vid_pid(NULL, 0x1532, 0x0237)) == NULL){
-		printf("Razer BlackWidow Essential not found or could not be opened");
+	hid_device *keyboard;
+	if((keyboard = hid_open_path(ll->path)) == NULL){
 		return 1;
 	}
 
-	return 0;
-}
+	unsigned char *data =   "\x00\x00\x1f\x00\x00\x00\x08\x0f\x03\x00\x00\x00\x00" \
+				"\x00\x00\xff\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00" \
+				"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00" \
+				"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00" \
+				"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00" \
+				"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xfb\x00";
 
-int send_request(libusb_device_handle *dev_handle){ 
-	return 0;
-}
 
-void safe_exit(libusb_device **list){
-	libusb_free_device_list(list, 1);
-	libusb_exit(NULL);
+
+	int sent = hid_send_feature_report(keyboard, data, sizeof(data) / sizeof(char));
+
+	hid_exit();
 }
