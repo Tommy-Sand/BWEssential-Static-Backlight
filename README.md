@@ -1,0 +1,1 @@
+This program is for the Razer BlackWidow Essential keyboard. It uses the hidapi to change the rgb from breathing to static without the use of Razer Synapse. This program is made on Mysys2 x64. Make sure you have hidapi installed before running make
